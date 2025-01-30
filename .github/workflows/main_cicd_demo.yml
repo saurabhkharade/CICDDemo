@@ -1,11 +1,47 @@
 name: CICD Demo
+
+# Trigger the workflow on pull request and manual dispatch
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
+  # Job to build and test the application
   build:
     runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup JDK 17 for Gradle
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+          cache: 'gradle'
+
+      # Step 3: Grant execute permissions for Gradle wrapper
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # Step 4: Run testsd
+      - name: Run Unit Tests
+        run: ./gradlew clean test --stacktrace
+
+      # Step 5: Build the application
+      - name: Build Application
+        run: ./gradlew build --stacktrace
+
+  # Deployment job (manual trigger or after build success)
+  deploy:
+    needs: build  # This job will only run if the build job succeeds
+    runs-on: ubuntu-latest
+
+    # You can limit this job to run only on workflow_dispatch for manual control
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -16,10 +52,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 17
-          cache: 'gradle'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Run Unit tests
-        run: ./gradlew clean test --debug
+      - name: Deploy Application
+        run: echo "Deploying the application..."  # Replace with your actual deploy script or commands
